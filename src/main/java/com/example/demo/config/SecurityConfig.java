@@ -2,7 +2,10 @@ package com.example.demo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -10,8 +13,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
     // Read values from application.properties
@@ -19,24 +24,24 @@ public class SecurityConfig {
     private String adminUsername;
     @Value("${security.admin.password}")
     private String adminPassword;
-    @Value("${security.user.admin.role}")
-    private String adminRole;
     @Value("${security.user.user.name}")
     private String userUsername;
     @Value("${security.user.password}")
     private String userPassword;
-    @Value("${security.user.user.role}")
-    private String userRole;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf().disable() // Disable CSRF for simplicity (not recommended for production)
-                .authorizeHttpRequests(auth -> auth
-                        .antMatchers("/cache/stats").hasRole("ADMIN") // Only user with the ADMIN role can access the cache endpoint.
+        // Disable CSRF & CORS
+        // Only admin can access the cache endpoint.
+        http
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.disable())
+                .authorizeHttpRequests(req -> req
+                        .requestMatchers(new AntPathRequestMatcher("/actuator/caches/"))
+                        .hasRole("ADMIN")
                         .anyRequest()
-                        .authenticated() // All other endpoints require authentication
-                )
-                .httpBasic(); // Enable basic authentication for simplicity
+                        .authenticated())
+                .httpBasic(Customizer.withDefaults());
         return http.build();
     }
 
@@ -47,7 +52,6 @@ public class SecurityConfig {
                 .roles("ADMIN") // Assign ADMIN role
                 .build();
 
-        //
         UserDetails user = User.withUsername(userUsername)
                 .password(passwordEncoder().encode(userPassword))
                 .roles("USER") // Assign USER role
@@ -56,6 +60,7 @@ public class SecurityConfig {
         return new InMemoryUserDetailsManager(admin, user);
     }
 
+    // A method to encrypt our password.
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
