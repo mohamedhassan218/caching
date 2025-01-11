@@ -37,7 +37,12 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.disable())
                 .authorizeHttpRequests(req -> req
-                        .requestMatchers(new AntPathRequestMatcher("/actuator/caches/"))
+                        .requestMatchers(
+                                new AntPathRequestMatcher("/test-admin"),
+                                new AntPathRequestMatcher("/actuator/caches/"),
+                                new AntPathRequestMatcher("/cache/**"),
+                                new AntPathRequestMatcher("/actuator/metrics")
+                        )
                         .hasRole("ADMIN")
                         .anyRequest()
                         .authenticated())

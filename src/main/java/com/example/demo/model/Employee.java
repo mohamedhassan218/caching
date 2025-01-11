@@ -1,10 +1,18 @@
 package com.example.demo.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class Employee {
     private int id;
     private String name;
 
-    public Employee(int id, String name) {
+    // The empty constructor is required to the deserialization.
+    public Employee() {
+    }
+
+    @JsonCreator
+    public Employee(@JsonProperty("id") int id, @JsonProperty("name") String name) {
         this.id = id;
         this.name = name;
     }

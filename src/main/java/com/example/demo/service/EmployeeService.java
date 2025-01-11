@@ -1,6 +1,7 @@
 package com.example.demo.service;
 
 import com.example.demo.model.Employee;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
@@ -12,12 +13,24 @@ import java.util.List;
 @Service
 public class EmployeeService {
 
+    private List<Employee> employees;
+
     @PostConstruct
+    // This function will be called after the service bean is created & initialized.
     public void init() {
-        getEmployees();
-        getEmployees();
+        // The method calls getEmployees() twice.
+        // This demonstrates caching behavior by showing whether the fetchEmployeesFromSource()
+        // is invoked multiple times.
+        getEmployees(); // Execute fetchEmployeesFromSource() as the cache is empty.
+        getEmployees(); // Retrieve the data from the cache without executing fetchEmployeesFromSource().
+        this.employees = new ArrayList<>(Arrays.asList(
+                new Employee(1, "sri"),
+                new Employee(2, "ram"),
+                new Employee(3, "raj")));
     }
 
+    // Cacheable annotation indicates that the method result should be cached under the specified name.
+    // If cache contains data for this method, method is skipped & cached result is returned.
     @Cacheable("employeesCache") // Specify the cache name
     public List<Employee> getEmployees() {
         // Simulated expensive API call or database query
@@ -32,9 +45,19 @@ public class EmployeeService {
         // Replace it with your actual implementation
         // ...
         System.out.println("employees are fetched from resource");
-        List<Employee> employees = Arrays.asList(new Employee(1, "sri"),
-                new Employee(2, "ram"),
-                new Employee(3, "raj"));
+
         return employees;
+    }
+
+    // Function to update data for employee in the cache.
+    @CachePut(value = "employeesCache", key = "#employee.id")
+    public Employee updateEmployeeInCache(Employee employee) {
+        // Simulate updating the employee in the source data.
+        List<Employee> employees = fetchEmployeesFromSource();
+        employees.removeIf(e -> e.getId() == employee.getId());
+        employees.add(employee);
+
+        System.out.println("Employee with ID: " + employee.getId() + " updated successfully :)");
+        return employee;
     }
 }
